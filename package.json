@@ -9,10 +9,15 @@
   "description": "Demos for ennecoded blog",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "format:hello-world": "prettier --write apps/hello-world"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.8.0"
+  "packageManager": "pnpm@10.8.0",
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
 }

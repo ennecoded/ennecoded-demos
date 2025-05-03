@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+html {
+  height: 100%;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+body {
+  @apply min-h-screen font-sans antialiased bg-pinky text-cocoa;
+
+  &.dark {
+    @apply bg-cocoa text-pinky;
   }
 }

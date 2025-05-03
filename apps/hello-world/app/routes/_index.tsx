@@ -1,24 +1,34 @@
+import { useEffect, useState } from "react";
 import type { MetaFunction } from "@remix-run/node";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "New Ennecoded App" },
-    { name: "description", content: "Welcome to Ennecoded Demos!" },
-  ];
-};
+export const meta: MetaFunction = () => [
+  { title: "ennecoded - hello world" },
+  { name: "description", content: "Welcome to Ennecoded Demos!" },
+];
 
 export default function Index() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="flex flex-col items-center gap-16">
-        <header className="flex flex-col items-center gap-9">
-          <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome to Your First Ennecoded Demo Project
-          </h1>
-        
-        </header>
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-      </div>
-    </div>
+  useEffect(() => {
+    document.body.classList.toggle("dark", isDarkMode);
+  }, [isDarkMode]);
+
+  return (
+    <main className="relative min-h-screen flex items-center justify-center px-4 transition-colors">
+      <button
+        onClick={() => setIsDarkMode(!isDarkMode)}
+        className="absolute top-6 right-6 w-12 h-12 rounded-full border border-current flex items-center justify-center transition duration-300 hover:rotate-180"
+        aria-label="Toggle dark mode"
+      >
+        <span className="text-xl">{isDarkMode ? "🌞" : "🌙"}</span>
+      </button>
+
+      <section className="w-full max-w-2xl text-center space-y-6">
+        <h1 className="text-3xl sm:text-4xl font-bold">
+          Welcome to Your First <span className="italic">Ennecoded</span> Demo
+          Project
+        </h1>
+      </section>
+    </main>
   );
 }

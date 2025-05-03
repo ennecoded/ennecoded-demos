@@ -1,9 +1,13 @@
-import type { Config } from "tailwindcss";
-
-export default {
+module.exports = {
   content: ["./app/**/{**,.client,.server}/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
+      colors: {
+        pinky: "#f9c7d9",
+        cocoa: "#4a2f2f",
+        ivory: "#fff8f2",
+      },
       fontFamily: {
         sans: [
           "Inter",
@@ -19,4 +23,4 @@ export default {
     },
   },
   plugins: [],
-} satisfies Config;
+};
