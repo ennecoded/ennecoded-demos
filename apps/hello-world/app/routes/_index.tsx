@@ -14,7 +14,7 @@ export default function Index() {
   }, [isDarkMode]);
 
   return (
-    <main className="relative min-h-screen flex items-center justify-center px-4 transition-colors">
+    <main className="relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors">
       <button
         onClick={() => setIsDarkMode(!isDarkMode)}
         className="absolute top-6 right-6 w-12 h-12 rounded-full border border-current flex items-center justify-center transition duration-300 hover:rotate-180"
@@ -28,6 +28,17 @@ export default function Index() {
           Welcome to Your First <span className="italic">Ennecoded</span> Demo
           Project
         </h1>
+        <p className="text-base opacity-80">
+          Check out the blog at{" "}
+          <a
+            href="https://ennecoded.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-cocoa dark:hover:text-pinky font-medium transition"
+          >
+            ennecoded.com
+          </a>
+        </p>
       </section>
     </main>
   );
