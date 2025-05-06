@@ -20,18 +20,22 @@ ennecoded-demos/
 ## 🚀 Getting Started
 
 ### 1. Clone and install
+
 ```bash
-git clone https://github.com/your-username/ennecoded-demos.git
+git clone https://github.com/ennecoded/ennecoded-demos.git
 cd ennecoded-demos
 pnpm install
 ```
 
 ### 2. Start an existing app
+
 ```bash
 pnpm --filter <app-name> dev
-``` 
+```
+
 Eg.
 To run the `hello-world` Remix app:
+
 ```bash
 pnpm --filter hello-world dev
 ```
@@ -48,6 +52,7 @@ npx create-remix@latest new-app-name
 ```
 
 Then:
+
 1. Update the app's `package.json` to include:
    ```json
    {
@@ -72,15 +77,16 @@ Then:
 
 ---
 
-
 ## 📚 App Directory
 
 Each app in the monorepo will have its own README for deeper context. Here’s the list so far:
 
 ### 📘 `hello-world`
+
 > A minimal Remix app that was built to test the deployment pipeline.
 
 **To run:**
+
 ```bash
 pnpm --filter hello-world dev
 ```
@@ -88,7 +94,6 @@ pnpm --filter hello-world dev
 📄 [Read the hello-world README](apps/hello-world/README.md)
 
 ---
-
 
 ## 🛠 Dev Tools
 
@@ -100,4 +105,5 @@ pnpm dev        # Start individual apps using --filter
 ---
 
 ## ❤️ Author
+
 Built by [Adrienne](https://ennecoded.com) — because sometimes, the best way to learn is to build it yourself.
