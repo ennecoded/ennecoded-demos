@@ -2,8 +2,8 @@ import {
   DndContext,
   useDraggable,
   useDroppable,
-  closestCenter,
   DragEndEvent,
+  rectIntersection,
 } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
 import type { MetaFunction } from "@remix-run/node";
@@ -129,7 +129,7 @@ export default function Index() {
         ref={setNodeRef}
         {...listeners}
         {...attributes}
-        className="w-10 h-10 border border-gray-400 flex items-center justify-center bg-yellow-300 cursor-grab"
+        className={`w-10 h-10 border border-gray-400 flex items-center justify-center cursor-grab transition-colors duration-200 ${isDarkMode ? "bg-[#4B3621] text-pink-300" : "bg-[#F9D5E5] text-[#4B3621]"}`}
         style={{
           transform: transform
             ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -138,6 +138,45 @@ export default function Index() {
         }}
       >
         {tile.letter}
+      </div>
+    );
+  };
+
+  const LetterRack = () => {
+    const { setNodeRef, isOver } = useDroppable({ id: "rack" });
+    return (
+      <div
+        id="rack"
+        ref={setNodeRef}
+        className={`grid gap-1 p-5 mt-6 border ${isDarkMode ? "border-[#A1866F]" : "border-pink-300"}`}
+        style={{
+          gridTemplateColumns: `repeat(7, 2.5rem)`,
+          gridTemplateRows: `repeat(3, 2.5rem)`,
+        }}
+      >
+        {tiles
+          .filter((tile) => !tile.isOnGrid)
+          .map((tile) => (
+            <Tile key={tile.id} tile={tile} />
+          ))}
+      </div>
+    );
+  };
+
+  const DumpArea = () => {
+    const { setNodeRef, isOver } = useDroppable({ id: "dump" });
+    return (
+      <div
+        ref={setNodeRef}
+        className={`mt-4 px-4 py-2 rounded-full border-2 border-dashed text-sm font-medium transition-all ${Object.values(pool).reduce((a, b) => a + b, 0) < 3 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${isDarkMode ? "border-pink-300 text-pink-300" : "border-[#4B3621] text-[#4B3621]"}`}
+        style={{
+          minHeight: "2.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        Dump Tile Here
       </div>
     );
   };
@@ -156,8 +195,14 @@ export default function Index() {
     return (
       <div
         ref={setNodeRef}
-        className="w-10 h-10 border border-gray-400 flex items-center justify-center"
-        style={{ backgroundColor: isOver ? "lightblue" : "white" }}
+        className={`w-10 h-10 flex items-center justify-center border ${isDarkMode ? "border-[#A1866F]" : "border-pink-400"}`}
+        style={{
+          backgroundColor: isOver
+            ? "lightblue"
+            : isDarkMode
+              ? "#1f1f1f"
+              : "white",
+        }}
       >
         {children}
       </div>
@@ -165,7 +210,9 @@ export default function Index() {
   };
 
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors">
+    <main
+      className={`relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors ${isDarkMode ? "bg-[#2C1E1E] text-white" : "bg-[#FFF1F5] text-black"}`}
+    >
       <button
         onClick={() => setIsDarkMode(!isDarkMode)}
         className="absolute top-6 right-6 w-12 h-12 rounded-full border border-current flex items-center justify-center transition duration-300 hover:rotate-180"
@@ -175,28 +222,105 @@ export default function Index() {
       </button>
 
       <DndContext
-        collisionDetection={closestCenter}
+        collisionDetection={rectIntersection}
         onDragEnd={(event: DragEndEvent) => {
           const { over, active } = event;
-          if (over?.id.toString().startsWith("cell-")) {
-            const [_, row, col] = over.id.toString().split("-");
-            setTiles((prev) =>
-              prev.map((tile) =>
-                tile.id === active.id
-                  ? {
-                      ...tile,
-                      isOnGrid: true,
-                      row: parseInt(row),
-                      col: parseInt(col),
-                    }
-                  : tile,
-              ),
-            );
+          console.log("over", over);
+          console.log("active", active);
+          if (!over) return;
+
+          const overId = over?.id?.toString();
+
+          if (overId === "dump") {
+            if (Object.values(pool).reduce((a, b) => a + b, 0) < 3) return;
+            setTiles((prevTiles) => {
+              const updatedTiles = prevTiles.filter(
+                (tile) => tile.id !== active.id,
+              );
+              const availableLetters = Object.entries(pool).flatMap(
+                ([letter, count]) => Array(count).fill(letter),
+              );
+
+              const drawnLetters: string[] = [];
+              const newPool = { ...pool };
+
+              for (let i = 0; i < 3 && availableLetters.length > 0; i++) {
+                const letter =
+                  availableLetters[
+                    Math.floor(Math.random() * availableLetters.length)
+                  ];
+                drawnLetters.push(letter);
+                newPool[letter] -= 1;
+                const indexToRemove = availableLetters.indexOf(letter);
+                availableLetters.splice(indexToRemove, 1);
+              }
+
+              setPool(newPool);
+
+              const maxId = Math.max(...prevTiles.map((t) => t.id), 0);
+              const newTiles = drawnLetters.map((letter, i) => ({
+                id: maxId + i + 1,
+                letter,
+                row: -1,
+                col: -1,
+                isOnGrid: false,
+              }));
+
+              return [...updatedTiles, ...newTiles];
+            });
+            return;
+          } else if (over.id.toString().startsWith("cell-")) {
+            const [_, rowStr, colStr] = over.id.toString().split("-");
+            const row = parseInt(rowStr);
+            const col = parseInt(colStr);
+
+            setTiles((prevTiles) => {
+              const draggedTile = prevTiles.find((t) => t.id === active.id);
+              if (!draggedTile) return prevTiles;
+
+              const updatedTiles = prevTiles.map((tile) => {
+                if (tile.id === active.id) {
+                  return {
+                    ...tile,
+                    isOnGrid: true,
+                    row,
+                    col,
+                  };
+                } else if (
+                  tile.isOnGrid &&
+                  tile.row === row &&
+                  tile.col === col
+                ) {
+                  return {
+                    ...tile,
+                    isOnGrid: false,
+                    row: -1,
+                    col: -1,
+                  };
+                }
+                return tile;
+              });
+
+              return updatedTiles;
+            });
+          } else if (over.id === "rack") {
+            setTiles((prevTiles) => {
+              const idx = prevTiles.findIndex((t) => t.id === active.id);
+              if (idx === -1) return prevTiles;
+              const updated = [...prevTiles];
+              updated[idx] = {
+                ...updated[idx],
+                isOnGrid: false,
+                row: -1,
+                col: -1,
+              };
+              return updated;
+            });
           }
         }}
       >
         <div
-          className={`grid gap-1 border border-gray-300`}
+          className={`grid gap-1 border ${isDarkMode ? "border-[#A1866F]" : "border-pink-300"}`}
           style={{
             gridTemplateColumns: `repeat(${colCount}, 2.5rem)`,
             gridTemplateRows: `repeat(${rowCount}, 2.5rem)`,
@@ -216,25 +340,40 @@ export default function Index() {
           })}
         </div>
 
-        <div
-          className="grid gap-1 border border-gray-300 p-5 mt-6"
-          style={{
-            gridTemplateColumns: `repeat(7, 2.5rem)`,
-            gridTemplateRows: `repeat(3, 2.5rem)`,
+        <LetterRack />
+        <button
+          onClick={() => {
+            const availableLetters = Object.entries(pool).flatMap(
+              ([letter, count]) => Array(count).fill(letter),
+            );
+            if (availableLetters.length === 0) return;
+            const letter =
+              availableLetters[
+                Math.floor(Math.random() * availableLetters.length)
+              ];
+            setPool((prev) => ({ ...prev, [letter]: prev[letter] - 1 }));
+            setTiles((prev) => [
+              ...prev,
+              {
+                id: prev.length,
+                letter,
+                row: -1,
+                col: -1,
+                isOnGrid: false,
+              },
+            ]);
           }}
+          className={`mt-4 bg-blue-500 text-white font-bold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transition duration-300`}
         >
-          {tiles
-            .filter((tile) => !tile.isOnGrid)
-            .map((tile) => (
-              <Tile key={tile.id} tile={tile} />
-            ))}
-        </div>
+          Reveal
+        </button>
+        <DumpArea />
       </DndContext>
 
       <div className="mt-4 flex gap-2">
         <button
           onClick={() => expandGrid("top")}
-          className="bg-gray-200 p-2 rounded-full"
+          className={`p-2 rounded-full transition-colors ${isDarkMode ? "bg-[#4B3621] text-pink-300" : "bg-[#F9D5E5] text-[#4B3621]"}`}
           aria-label="Expand top"
         >
           ⬆️
