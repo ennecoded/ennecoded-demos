@@ -380,21 +380,21 @@ export default function Index() {
         </button>
         <button
           onClick={() => expandGrid("bottom")}
-          className="bg-gray-200 p-2 rounded-full"
+          className={`p-2 rounded-full transition-colors ${isDarkMode ? "bg-[#4B3621] text-pink-300" : "bg-[#F9D5E5] text-[#4B3621]"}`}
           aria-label="Expand bottom"
         >
           ⬇️
         </button>
         <button
           onClick={() => expandGrid("left")}
-          className="bg-gray-200 p-2 rounded-full"
+          className={`p-2 rounded-full transition-colors ${isDarkMode ? "bg-[#4B3621] text-pink-300" : "bg-[#F9D5E5] text-[#4B3621]"}`}
           aria-label="Expand left"
         >
           ⬅️
         </button>
         <button
           onClick={() => expandGrid("right")}
-          className="bg-gray-200 p-2 rounded-full"
+          className={`p-2 rounded-full transition-colors ${isDarkMode ? "bg-[#4B3621] text-pink-300" : "bg-[#F9D5E5] text-[#4B3621]"}`}
           aria-label="Expand right"
         >
           ➡️
