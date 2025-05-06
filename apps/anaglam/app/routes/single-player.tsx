@@ -148,10 +148,16 @@ export default function Index() {
       <div
         id="rack"
         ref={setNodeRef}
-        className={`grid gap-1 p-5 mt-6 border ${isDarkMode ? "border-[#A1866F]" : "border-pink-300"}`}
+        className={`sticky bottom-0 z-10 bg-inherit border-t-2 px-4 py-3 ${
+          isDarkMode ? "border-[#A1866F]" : "border-pink-300"
+        }`}
         style={{
-          gridTemplateColumns: `repeat(7, 2.5rem)`,
-          gridTemplateRows: `repeat(3, 2.5rem)`,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(2.5rem, 1fr))",
+          gridAutoRows: "2.5rem",
+          gap: "0.5rem",
+          maxWidth: "100%",
+          justifyContent: "center",
         }}
       >
         {tiles
@@ -168,8 +174,13 @@ export default function Index() {
     return (
       <div
         ref={setNodeRef}
-        className={`mt-4 px-4 py-2 rounded-full border-2 border-dashed text-sm font-medium transition-all ${Object.values(pool).reduce((a, b) => a + b, 0) < 3 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${isDarkMode ? "border-pink-300 text-pink-300" : "border-[#4B3621] text-[#4B3621]"}`}
+        className={`sticky bottom-0 mt-2 px-4 py-2 rounded-full border-2 border-dashed text-sm font-medium z-10 transition-all ${
+          Object.values(pool).reduce((a, b) => a + b, 0) < 3
+            ? "opacity-50 cursor-not-allowed"
+            : "cursor-pointer"
+        } ${isDarkMode ? "border-pink-300 text-pink-300" : "border-[#4B3621] text-[#4B3621]"}`}
         style={{
+          backgroundColor: isDarkMode ? "#2C1E1E" : "#FFF1F5",
           minHeight: "2.5rem",
           display: "flex",
           alignItems: "center",
@@ -363,10 +374,15 @@ export default function Index() {
               },
             ]);
           }}
-          className={`mt-4 bg-blue-500 text-white font-bold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transition duration-300`}
+          disabled={
+            Object.values(pool).reduce((a, b) => a + b, 0) === 0 ||
+            tiles.some((tile) => !tile.isOnGrid)
+          }
+          className={`mt-4 bg-pink-500 disabled:bg-pink-100 text-white disabled:text-gray font-bold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transition duration-300`}
         >
-          Reveal
+          Reveal ({Object.values(pool).reduce((a, b) => a + b, 0)} left)
         </button>
+        <button>Validate</button>
         <DumpArea />
       </DndContext>
 
