@@ -11,7 +11,7 @@ importers:
         specifier: ^3.5.3
         version: 3.5.3
 
-  apps/anaglam:
+  apps/enne-agrams:
     dependencies:
       "@dnd-kit/core":
         specifier: ^6.3.1
