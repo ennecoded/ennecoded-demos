@@ -14,6 +14,7 @@ export const LetterRack = ({ tiles }: { tiles: TileType[] }) => {
         gridAutoRows: "2.5rem",
         gap: "0.5rem",
         maxWidth: "50rem",
+        width: "80vw",
         justifyContent: "center",
       }}
     >
