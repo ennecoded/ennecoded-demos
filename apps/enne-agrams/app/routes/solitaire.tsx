@@ -191,7 +191,7 @@ export default function Index() {
           }
         }}
       >
-<div className="flex-grow px-4 pb-36 flex flex-col items-center justify-center pt-2">
+<div className="flex-grow px-4 pb-36 flex flex-col items-center justify-center pt-2 overflow-hidden ">
 <h1 className="text-2xl font-bold text-center pb-8">Enne-agrams</h1>
 <Grid tiles={tiles} setTiles={setTiles} />
         </div>
