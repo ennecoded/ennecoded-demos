@@ -21,7 +21,7 @@ export const DumpArea = ({
         justifyContent: "center",
       }}
     >
-      Dump
+      Dump ({Object.values(pool).flatMap((letter) => letter).length} remaining)
     </div>
   );
 };

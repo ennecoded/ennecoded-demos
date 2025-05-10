@@ -200,7 +200,6 @@ export default function Index() {
           <LetterRack tiles={tiles} />
           <DumpArea pool={pool} />
         </div>
-        ({Object.values(pool).flatMap((letter) => letter).length} remaining)
       </DndContext>
     </main>
   );
