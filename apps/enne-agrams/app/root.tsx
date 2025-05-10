@@ -8,6 +8,7 @@ import {
 import type { LinksFunction } from "@remix-run/node";
 
 import "./tailwind.css";
+import { useEffect, useState } from "react";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,6 +24,12 @@ export const links: LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", isDarkMode);
+  }, [isDarkMode]);
+
   return (
     <html lang="en">
       <head>
@@ -32,7 +39,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <main className="relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors">
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full border border-current flex items-center justify-center transition duration-300 hover:rotate-180"
+            aria-label="Toggle dark mode"
+          >
+            <span className="text-xl">{isDarkMode ? "🌞" : "🌙"}</span>
+          </button>
+          {children}
+        </main>
         <ScrollRestoration />
         <Scripts />
       </body>
