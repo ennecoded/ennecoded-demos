@@ -39,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <main className="relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors">
+        <main className="relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors max-w-screen max-h-screen overflow-hidden">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="absolute top-6 right-6 w-12 h-12 rounded-full border border-current flex items-center justify-center transition duration-300 hover:rotate-180"

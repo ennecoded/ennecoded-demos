@@ -81,11 +81,7 @@ export default function Index() {
   }, []);
 
   return (
-    <main
-      className={`relative min-h-screen flex flex-col items-center justify-center px-4 transition-colors text-white dark:text-black bg-pinky dark:bg-coco box-border`}
-    >
-      <h1 className="text-2xl font-bold mb-8">Enne-agrams</h1>
-
+    <div className="min-h-screen flex flex-col overflow-hidden">
       <DndContext
         collisionDetection={rectIntersection}
         onDragEnd={(event: DragEndEvent) => {
@@ -195,12 +191,17 @@ export default function Index() {
           }
         }}
       >
-        <Grid tiles={tiles} setTiles={setTiles} />
-        <div className="sticky bottom-0 z-10 flex flex-col items-center justify-between w-screen px-4 py-2 bg-pinky dark:bg-cocoa border-b border-pinky dark:border-ivory">
-          <LetterRack tiles={tiles} />
+<div className="flex-grow px-4 pb-36 flex flex-col items-center justify-center pt-2">
+<h1 className="text-2xl font-bold text-center pb-8">Enne-agrams</h1>
+<Grid tiles={tiles} setTiles={setTiles} />
+        </div>
+        <div className="fixed bottom-0 left-0 w-full z-10 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
+        <div className="flex flex-col items-center justify-between">
+                    <LetterRack tiles={tiles} />
           <DumpArea pool={pool} />
         </div>
+        </div>
       </DndContext>
-    </main>
+    </div>
   );
 }
