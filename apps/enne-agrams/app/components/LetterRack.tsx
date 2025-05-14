@@ -3,26 +3,17 @@ import { Tile, TileType } from "./Tile";
 
 export const LetterRack = ({ tiles }: { tiles: TileType[] }) => {
   const { setNodeRef } = useDroppable({ id: "rack" });
+  const unusedTiles = tiles.filter((tile) => !tile.isOnGrid);
+
   return (
-    <div
-      id="rack"
-      ref={setNodeRef}
-      className={`bg-inherit border-t-2 px-4 py-3  border-pinky dark:border-ivory`}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(2.5rem, 1fr))",
-        gridAutoRows: "2.5rem",
-        gap: "0.5rem",
-        maxWidth: "50rem",
-        width: "80vw",
-        justifyContent: "center",
-      }}
-    >
-      {tiles
-        .filter((tile) => !tile.isOnGrid)
-        .map((tile) => (
-          <Tile key={tile.id} tile={tile} />
+    <div id="rack" ref={setNodeRef} className="w-full">
+      <div className="flex flex-wrap gap-2 justify-center">
+        {unusedTiles.map((tile) => (
+          <div key={tile.id} className="flex-shrink-0">
+            <Tile tile={tile} />
+          </div>
         ))}
+      </div>
     </div>
   );
 };

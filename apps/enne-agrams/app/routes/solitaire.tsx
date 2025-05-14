@@ -1,10 +1,11 @@
 import {
+  closestCenter,
   DndContext,
   DragEndEvent,
-  pointerWithin,
+  DragStartEvent,
   rectIntersection,
 } from "@dnd-kit/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { MetaFunction } from "@remix-run/node";
 import { TileType } from "../components/Tile";
 import { LetterRack } from "../components/LetterRack";
@@ -17,12 +18,10 @@ export const meta: MetaFunction = () => [
 ];
 
 export default function Index() {
-  // State to track if we're currently dragging (for scroll control)
   const [isDragging, setIsDragging] = useState(false);
 
   // Prevent global scrolling
   useEffect(() => {
-    // Apply these styles when the component mounts
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.overflow = "hidden";
@@ -30,7 +29,6 @@ export default function Index() {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
 
-    // Clean up when the component unmounts
     return () => {
       document.documentElement.style.overflow = "";
       document.documentElement.style.height = "";
@@ -72,24 +70,6 @@ export default function Index() {
     Z: Array.from({ length: 2 }, (_, i) => ({ id: `Z-${i}`, letter: "Z" })),
   });
   const [tiles, setTiles] = useState<TileType[]>([]);
-  const rackRef = useRef<HTMLDivElement | null>(null);
-
-  // Custom collision detection function that prioritizes the dump area
-  const customCollisionDetection = (args: any) => {
-    // First check if it's over the dump area or rack
-    const dumpCollisions = pointerWithin(args);
-
-    // If a dump area or rack collision is detected, return just that
-    if (
-      dumpCollisions.length > 0 &&
-      (dumpCollisions[0].id === "dump" || dumpCollisions[0].id === "rack")
-    ) {
-      return dumpCollisions;
-    }
-
-    // Otherwise use the default rectangle intersection algorithm for the grid
-    return rectIntersection(args);
-  };
 
   const generateTiles = () => {
     const newTiles = [];
@@ -127,14 +107,11 @@ export default function Index() {
     generateTiles();
   }, []);
 
-
-  // React-like handlers for drag events
   const handleDragStart = () => {
     setIsDragging(true);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    // First reset drag state to restore normal scrolling
     setIsDragging(false);
 
     const { over, active } = event;
@@ -201,10 +178,21 @@ export default function Index() {
         ...prevTiles.filter((t) => t.id !== active.id),
         ...newTiles,
       ]);
-
-      return;
-    } else if (over.id.toString().startsWith("cell-")) {
-      const [_, rowStr, colStr] = over.id.toString().split("-");
+    } else if (overId === "rack") {
+      setTiles((prevTiles) => {
+        const idx = prevTiles.findIndex((t) => t.id === active.id);
+        if (idx === -1) return prevTiles;
+        const updated = [...prevTiles];
+        updated[idx] = {
+          ...updated[idx],
+          isOnGrid: false,
+          row: -1,
+          col: -1,
+        };
+        return updated;
+      });
+    } else if (overId?.startsWith("cell-")) {
+      const [_, rowStr, colStr] = overId.split("-");
       const row = parseInt(rowStr);
       const col = parseInt(colStr);
 
@@ -233,45 +221,38 @@ export default function Index() {
 
         return updatedTiles;
       });
-    } else if (over.id === "rack") {
-      setTiles((prevTiles) => {
-        const idx = prevTiles.findIndex((t) => t.id === active.id);
-        if (idx === -1) return prevTiles;
-        const updated = [...prevTiles];
-        updated[idx] = {
-          ...updated[idx],
-          isOnGrid: false,
-          row: -1,
-          col: -1,
-        };
-        return updated;
-      });
     }
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <DndContext
-        collisionDetection={customCollisionDetection}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex flex-col px-4 pt-2 pb-36">
-          <h1 className="text-2xl font-bold text-center pb-4">Enne-agrams</h1>
-          <div className="flex-grow flex justify-center">
-            <Grid tiles={tiles} disableScroll={isDragging} />
-          </div>
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex flex-col h-screen bg-pinky dark:bg-cocoa">
+        {/* Header */}
+        <div className="p-2 text-center">
+          <h1 className="text-2xl font-bold">Enne-agrams</h1>
         </div>
-        <div className="fixed bottom-0 left-0 w-full z-20 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
-          <div
-            className="flex flex-col items-center justify-between"
-            ref={rackRef}
-          >
+
+        {/* Main game board - takes available space */}
+        <div className="flex-1 overflow-auto p-2">
+          <Grid tiles={tiles} disableScroll={isDragging} />
+        </div>
+
+        {/* Letter rack area - fixed height */}
+        <div className="border-t border-cocoa dark:border-ivory">
+          <div className="h-24 overflow-auto p-2">
             <LetterRack tiles={tiles} />
-            <DumpArea pool={pool} />
           </div>
         </div>
-      </DndContext>
-    </div>
+
+        {/* Dump button area - fixed height */}
+        <div className="p-2 flex justify-center border-t border-cocoa dark:border-ivory">
+          <DumpArea pool={pool} />
+        </div>
+      </div>
+    </DndContext>
   );
 }
