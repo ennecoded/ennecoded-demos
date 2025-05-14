@@ -1,5 +1,5 @@
 import { DndContext, DragEndEvent, rectIntersection } from "@dnd-kit/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MetaFunction } from "@remix-run/node";
 import { TileType } from "../components/Tile";
 import { LetterRack } from "../components/LetterRack";
@@ -43,6 +43,8 @@ export default function Index() {
     Z: Array.from({ length: 2 }, (_, i) => ({ id: `Z-${i}`, letter: "Z" })),
   });
   const [tiles, setTiles] = useState<TileType[]>([]);
+  const rackRef = useRef<HTMLDivElement | null>(null);
+  const [rackTopY, setRackTopY] = useState<number | null>(null);
 
   const generateTiles = () => {
     const newTiles = [];
@@ -80,11 +82,41 @@ export default function Index() {
     generateTiles();
   }, []);
 
+  useEffect(() => {
+    if (rackRef.current) {
+      const rect = rackRef.current.getBoundingClientRect();
+      setRackTopY(rect.top);
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen flex flex-col h-full">
       <DndContext
         collisionDetection={rectIntersection}
         onDragEnd={(event: DragEndEvent) => {
+          const nativeEvent = event.activatorEvent;
+
+          let clientY: number | null = null;
+
+          if (
+            nativeEvent instanceof MouseEvent ||
+            nativeEvent instanceof TouchEvent
+          ) {
+            console.log("nativeEvent", nativeEvent);
+            clientY =
+              nativeEvent instanceof MouseEvent
+                ? nativeEvent.clientY
+                : (nativeEvent.touches[0]?.clientY ?? null);
+          }
+
+          console.log("clientY", clientY);
+          console.log("rackTopY", rackTopY);
+
+          if (rackTopY !== null && clientY !== null && clientY >= rackTopY) {
+            // Dropped over or below the rack — ignore
+            return;
+          }
+
           const { over, active } = event;
           console.log("over", over);
           console.log("active", active);
@@ -191,15 +223,18 @@ export default function Index() {
           }
         }}
       >
-<div className="flex-grow px-4 pb-36 flex flex-col items-center justify-center pt-2 overflow-hidden ">
-<h1 className="text-2xl font-bold text-center pb-8">Enne-agrams</h1>
-<Grid tiles={tiles} setTiles={setTiles} />
+        <div className="grow px-4 pb-36 flex flex-col items-center justify-center pt-2 h-full">
+          <h1 className="text-2xl font-bold text-center pb-8 ">Enne-agrams</h1>
+          <Grid tiles={tiles} />
         </div>
         <div className="fixed bottom-0 left-0 w-full z-10 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
-        <div className="flex flex-col items-center justify-between">
-                    <LetterRack tiles={tiles} />
-          <DumpArea pool={pool} />
-        </div>
+          <div
+            className="flex flex-col items-center justify-between"
+            ref={rackRef}
+          >
+            <LetterRack tiles={tiles} />
+            <DumpArea pool={pool} />
+          </div>
         </div>
       </DndContext>
     </div>

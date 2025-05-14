@@ -1,101 +1,55 @@
-import { useState } from "react";
 import { Tile, TileType } from "../Tile";
 import { Cell } from "./Cell";
+import { useEffect, useRef } from "react";
 
-export const Grid = ({
-  tiles,
-  setTiles,
-}: {
-  tiles: TileType[];
-  setTiles: React.Dispatch<React.SetStateAction<TileType[]>>;
-}) => {
-  const [rowCount, setRowCount] = useState(10);
-  const [colCount, setColCount] = useState(10);
+export const Grid = ({ tiles }: { tiles: TileType[] }) => {
+  const rowCount = 20;
+  const colCount = 20;
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
-  const expandGrid = (direction: "top" | "bottom" | "left" | "right") => {
-    if ((direction === "top" || direction === "bottom") && rowCount < 144) {
-      if (direction === "top") {
-        if (tiles.some((tile) => tile.row === rowCount - 1)) {
-          setRowCount((prev) => prev + 1);
-        }
-        if (!tiles.some((tile) => tile.row === rowCount - 1)) {
-          setTiles((prevTiles) =>
-            prevTiles.map((tile) => ({
-              ...tile,
-              row: tile.row + 1,
-            }))
-          );
-        }
+  // Calculate distance from top of page to bottom rack
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (gridContainerRef.current) {
+        const viewportHeight = window.innerHeight;
+        // Account for header (assume ~80px) and bottom rack (~100px)
+        const availableHeight = viewportHeight - 180;
+        gridContainerRef.current.style.height = `${availableHeight}px`;
       }
-      if (direction === "bottom") {
-        if (tiles.some((tile) => tile.row === 0)) {
-          setRowCount((prev) => prev + 1);
-        }
-        if (!tiles.some((tile) => tile.row === 0)) {
-          setTiles((prevTiles) =>
-            prevTiles.map((tile) => ({
-              ...tile,
-              row: tile.row - 1,
-            }))
-          );
-        }
-      }
-    } else if (
-      (direction === "left" || direction === "right") &&
-      colCount < 144
-    ) {
-      if (direction === "left") {
-        if (tiles.some((tile) => tile.col === colCount - 1)) {
-          setColCount((prev) => prev + 1);
-        }
-        if (!tiles.some((tile) => tile.col === colCount - 1)) {
-          setTiles((prevTiles) =>
-            prevTiles.map((tile) => ({
-              ...tile,
-              col: tile.col + 1,
-            }))
-          );
-        }
-      }
-      if (direction === "right") {
-        if (tiles.some((tile) => tile.col === 0)) {
-          setColCount((prev) => prev + 1);
-        }
-        if (!tiles.some((tile) => tile.col === 0)) {
-          setTiles((prevTiles) =>
-            prevTiles.map((tile) => ({
-              ...tile,
-              col: tile.col - 1,
-            }))
-          );
-        }
-      }
-    }
-  };
+    };
+
+    calculateHeight();
+    window.addEventListener("resize", calculateHeight);
+
+    return () => window.removeEventListener("resize", calculateHeight);
+  }, []);
+
+  // Calculate grid width based on cell size and column count
+  const gridWidth = 2.5 * colCount + 0.25 * (colCount - 1) + 1; // 2.5rem per cell + 0.25rem gap + padding
 
   return (
-    <div className="relative flex justify-center items-center">
+    <div className="flex w-full justify-center">
       <div
-        className="border border-gray-300 rounded-lg box-border flex overflow-x-auto overflow-y-scroll"
+        ref={gridContainerRef}
+        className="overflow-auto border border-gray-300 rounded-lg"
         style={{
-          maxWidth: "80vw",
-          maxHeight: "1200px",
-
+          width: `min(95vw, ${gridWidth}rem)`,
+          maxWidth: "95vw",
         }}
       >
         <div
-          className="grid gap-1"
+          className="grid gap-1 p-2"
           style={{
             gridTemplateColumns: `repeat(${colCount}, 2.5rem)`,
             gridTemplateRows: `repeat(${rowCount}, 2.5rem)`,
-            height: `${rowCount * 3}rem`,
+            width: "max-content",
           }}
         >
           {Array.from({ length: rowCount * colCount }).map((_, index) => {
             const row = Math.floor(index / colCount);
             const col = index % colCount;
             const occupyingTile = tiles.find(
-              (tile) => tile.isOnGrid && tile.row === row && tile.col === col
+              (tile) => tile.isOnGrid && tile.row === row && tile.col === col,
             );
             return (
               <Cell key={`cell-${row}-${col}`} row={row} col={col}>
@@ -105,36 +59,6 @@ export const Grid = ({
           })}
         </div>
       </div>
-
-      {/* Expand Buttons */}
-      <button
-        onClick={() => expandGrid("top")}
-        className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-gray-200 p-2 rounded-full shadow-md hover:bg-gray-300 z-10"
-        aria-label="Expand top"
-      >
-        ↑
-      </button>
-      <button
-        onClick={() => expandGrid("bottom")}
-        className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-200 p-2 rounded-full shadow-md hover:bg-gray-300 z-10"
-        aria-label="Expand bottom"
-      >
-        ↓
-      </button>
-      <button
-        onClick={() => expandGrid("left")}
-        className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-full bg-gray-200 p-2 rounded-full shadow-md hover:bg-gray-300 z-10"
-        aria-label="Expand left"
-      >
-        ←
-      </button>
-      <button
-        onClick={() => expandGrid("right")}
-        className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-full bg-gray-200 p-2 rounded-full shadow-md hover:bg-gray-300 z-10"
-        aria-label="Expand right"
-      >
-        →
-      </button>
     </div>
   );
 };
