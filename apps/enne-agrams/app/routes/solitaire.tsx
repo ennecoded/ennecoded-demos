@@ -1,13 +1,13 @@
 import {
-  closestCenter,
   DndContext,
   DragEndEvent,
   DragStartEvent,
   rectIntersection,
+  DragOverlay,
 } from "@dnd-kit/core";
 import { useEffect, useState, useRef } from "react";
 import type { MetaFunction } from "@remix-run/node";
-import { TileType } from "../components/Tile";
+import { TileType, Tile } from "../components/Tile";
 import { LetterRack } from "../components/LetterRack";
 import { DumpArea } from "../components/DumpArea";
 import { Grid } from "../components/Board/Grid";
@@ -19,6 +19,7 @@ export const meta: MetaFunction = () => [
 
 export default function Index() {
   const [isDragging, setIsDragging] = useState(false);
+  const [activeTile, setActiveTile] = useState<TileType | null>(null);
 
   // Prevent global scrolling
   useEffect(() => {
@@ -107,12 +108,19 @@ export default function Index() {
     generateTiles();
   }, []);
 
-  const handleDragStart = () => {
+  const handleDragStart = (event: DragStartEvent) => {
     setIsDragging(true);
+
+    // Find the tile being dragged
+    const draggedTile = tiles.find((tile) => tile.id === event.active.id);
+    if (draggedTile) {
+      setActiveTile(draggedTile);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setIsDragging(false);
+    setActiveTile(null);
 
     const { over, active } = event;
     if (!over) return;
@@ -226,33 +234,38 @@ export default function Index() {
 
   return (
     <DndContext
-      collisionDetection={closestCenter}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-screen bg-pinky dark:bg-cocoa">
-        {/* Header */}
-        <div className="p-2 text-center">
+        {/* Header - Adding safe area padding for mobile */}
+        <div className="p-2 pt-4 text-center safe-top">
           <h1 className="text-2xl font-bold">Enne-agrams</h1>
         </div>
 
         {/* Main game board - takes available space */}
-        <div className="flex-1 overflow-auto p-2">
+        <div className="flex-1 overflow-auto p-2 max-h-[calc(100vh-120px)]">
           <Grid tiles={tiles} disableScroll={isDragging} />
         </div>
 
         {/* Letter rack area - fixed height */}
         <div className="border-t border-cocoa dark:border-ivory">
-          <div className="h-24 overflow-auto p-2">
+          <div className="h-20 overflow-auto p-2">
             <LetterRack tiles={tiles} />
           </div>
         </div>
 
-        {/* Dump button area - fixed height */}
-        <div className="p-2 flex justify-center border-t border-cocoa dark:border-ivory">
+        {/* Dump button area - fixed height with safe area for bottom */}
+        <div className="p-2 pb-4 flex justify-center border-t border-cocoa dark:border-ivory safe-bottom">
           <DumpArea pool={pool} />
         </div>
       </div>
+
+      {/* Drag Overlay - This is the key component that ensures tiles remain visible during drag */}
+      <DragOverlay>
+        {activeTile ? <Tile tile={activeTile} isDragOverlay={true} /> : null}
+      </DragOverlay>
     </DndContext>
   );
 }

@@ -90,24 +90,38 @@ export const Grid = ({ tiles, disableScroll = false }: GridProps) => {
     };
   }, [disableScroll]);
 
+  // Calculate cell size based on screen width for responsive design
+  const getCellSize = () => {
+    // For mobile devices, make cells slightly smaller
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      return "2rem";
+    }
+    // Default size for larger screens
+    return "2.5rem";
+  };
+
+  // For this example, we'll use a fixed cell size, but in reality,
+  // you might want to calculate this dynamically based on screen size
+  const cellSize = getCellSize();
+
   return (
     <div className="relative h-full w-full">
       <div
         ref={gridContainerRef}
-        className={`border border-gray-300 rounded-lg ${disableScroll ? "overflow-hidden" : "overflow-auto"} h-full`}
+        className={`border border-gray-300 rounded-lg ${disableScroll ? "overflow-hidden" : "overflow-auto"} h-full w-full`}
         style={{
           overflowX: disableScroll ? "hidden" : "auto",
           overflowY: disableScroll ? "hidden" : "auto",
-          maxWidth: "85vw", // Adjusted width for better responsiveness
+          maxWidth: "95vw",
         }}
       >
         <div
           className="grid gap-1 p-4"
           style={{
-            gridTemplateColumns: `repeat(${colCount}, 2.5rem)`,
-            gridTemplateRows: `repeat(${rowCount}, 2.5rem)`,
-            width: `calc(${colCount} * 2.5rem + (${colCount} - 1) * 0.25rem + 2rem)`, // Total width calculation including gaps and padding
-            height: `calc(${rowCount} * 2.5rem + (${rowCount} - 1) * 0.25rem + 2rem)`, // Total height calculation including gaps and padding
+            gridTemplateColumns: `repeat(${colCount}, ${cellSize})`,
+            gridTemplateRows: `repeat(${rowCount}, ${cellSize})`,
+            width: `calc(${colCount} * ${cellSize} + (${colCount} - 1) * 0.25rem + 2rem)`,
+            height: `calc(${rowCount} * ${cellSize} + (${rowCount} - 1) * 0.25rem + 2rem)`,
           }}
         >
           {Array.from({ length: rowCount * colCount }).map((_, index) => {
