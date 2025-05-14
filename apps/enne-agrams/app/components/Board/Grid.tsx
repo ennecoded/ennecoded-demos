@@ -2,12 +2,18 @@ import { Tile, TileType } from "../Tile";
 import { Cell } from "./Cell";
 import { useEffect, useRef } from "react";
 
-export const Grid = ({ tiles }: { tiles: TileType[] }) => {
+interface GridProps {
+  tiles: TileType[];
+  disableScroll?: boolean;
+}
+
+export const Grid = ({ tiles, disableScroll = false }: GridProps) => {
   const rowCount = 20;
   const colCount = 20;
-  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollPositionRef = useRef<number>(0);
 
-  // Calculate distance from top of page to bottom rack
+  // Set up grid height and manage scroll behavior
   useEffect(() => {
     const calculateHeight = () => {
       if (gridContainerRef.current) {
@@ -21,8 +27,37 @@ export const Grid = ({ tiles }: { tiles: TileType[] }) => {
     calculateHeight();
     window.addEventListener("resize", calculateHeight);
 
-    return () => window.removeEventListener("resize", calculateHeight);
+    return () => {
+      window.removeEventListener("resize", calculateHeight);
+    };
   }, []);
+
+  // Handle scroll disabling/enabling
+  useEffect(() => {
+    if (!gridContainerRef.current) return;
+
+    if (disableScroll) {
+      // Store current scroll position when disabling scroll
+      scrollPositionRef.current = gridContainerRef.current.scrollTop;
+    }
+
+    // Create a scroll event handler that maintains position during disable
+    const handleScroll = () => {
+      if (disableScroll && gridContainerRef.current) {
+        gridContainerRef.current.scrollTop = scrollPositionRef.current;
+      }
+    };
+
+    // Add event listener
+    const gridContainer = gridContainerRef.current;
+    gridContainer.addEventListener("scroll", handleScroll);
+
+    return () => {
+      if (gridContainer) {
+        gridContainer.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [disableScroll]);
 
   // Calculate grid width based on cell size and column count
   const gridWidth = 2.5 * colCount + 0.25 * (colCount - 1) + 1; // 2.5rem per cell + 0.25rem gap + padding
@@ -31,7 +66,7 @@ export const Grid = ({ tiles }: { tiles: TileType[] }) => {
     <div className="flex w-full justify-center">
       <div
         ref={gridContainerRef}
-        className="overflow-auto border border-gray-300 rounded-lg"
+        className={`border border-gray-300 rounded-lg ${disableScroll ? "overflow-hidden" : "overflow-auto"}`}
         style={{
           width: `min(95vw, ${gridWidth}rem)`,
           maxWidth: "95vw",

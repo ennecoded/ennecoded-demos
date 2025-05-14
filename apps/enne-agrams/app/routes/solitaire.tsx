@@ -1,4 +1,9 @@
-import { DndContext, DragEndEvent, rectIntersection } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  rectIntersection,
+} from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
 import type { MetaFunction } from "@remix-run/node";
 import { TileType } from "../components/Tile";
@@ -12,6 +17,30 @@ export const meta: MetaFunction = () => [
 ];
 
 export default function Index() {
+  // State to track if we're currently dragging (for scroll control)
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Prevent global scrolling
+  useEffect(() => {
+    // Apply these styles when the component mounts
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.overflow = "hidden";
+    document.body.style.height = "100%";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+
+    // Clean up when the component unmounts
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.documentElement.style.height = "";
+      document.body.style.overflow = "";
+      document.body.style.height = "";
+      document.body.style.margin = "";
+      document.body.style.padding = "";
+    };
+  }, []);
+
   const [pool, setPool] = useState<
     Record<string, { id: string; letter: string }[]>
   >({
@@ -89,143 +118,141 @@ export default function Index() {
     }
   }, []);
 
+  // React-like handlers for drag events
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    // First reset drag state to restore normal scrolling
+    setIsDragging(false);
+
+    const nativeEvent = event.activatorEvent;
+    let clientY: number | null = null;
+
+    if (
+      nativeEvent instanceof MouseEvent ||
+      nativeEvent instanceof TouchEvent
+    ) {
+      clientY =
+        nativeEvent instanceof MouseEvent
+          ? nativeEvent.clientY
+          : (nativeEvent.touches[0]?.clientY ?? null);
+    }
+
+    if (rackTopY !== null && clientY !== null && clientY >= rackTopY) {
+      // Dropped over or below the rack — ignore
+      return;
+    }
+
+    const { over, active } = event;
+    if (!over) return;
+
+    const overId = over?.id?.toString();
+    if (overId === "dump") {
+      if (Object.values(pool).flatMap((p) => p).length < 3) return;
+      const newTiles: TileType[] = [];
+      const localPool = { ...pool };
+      const expandedLetters = Object.values(localPool).flatMap(
+        (letterArray) => letterArray,
+      );
+      for (let i = expandedLetters.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [expandedLetters[i], expandedLetters[j]] = [
+          expandedLetters[j],
+          expandedLetters[i],
+        ];
+      }
+      while (newTiles.length < 3 && expandedLetters.length > 0) {
+        const letter = expandedLetters.pop();
+
+        if (!letter) break;
+        newTiles.push({
+          id: letter.id,
+          letter: letter.letter,
+          row: -1,
+          col: -1,
+          isOnGrid: false,
+        });
+        localPool[letter.letter] = localPool[letter.letter].filter(
+          (l) => l.id !== letter.id,
+        );
+      }
+
+      setPool({
+        ...localPool,
+        [active.data.current?.letter]: [
+          ...(localPool[active.data.current?.letter] || []),
+          {
+            id: String(active.id),
+            letter: String(active.data.current?.letter),
+          },
+        ],
+      });
+
+      setTiles((prevTiles) => {
+        return [...prevTiles.filter((t) => t.id !== active.id), ...newTiles];
+      });
+
+      return;
+    } else if (over.id.toString().startsWith("cell-")) {
+      const [_, rowStr, colStr] = over.id.toString().split("-");
+      const row = parseInt(rowStr);
+      const col = parseInt(colStr);
+
+      setTiles((prevTiles) => {
+        const draggedTile = prevTiles.find((t) => t.id === active.id);
+        if (!draggedTile) return prevTiles;
+
+        const updatedTiles = prevTiles.map((tile) => {
+          if (tile.id === active.id) {
+            return {
+              ...tile,
+              isOnGrid: true,
+              row,
+              col,
+            };
+          } else if (tile.isOnGrid && tile.row === row && tile.col === col) {
+            return {
+              ...tile,
+              isOnGrid: false,
+              row: -1,
+              col: -1,
+            };
+          }
+          return tile;
+        });
+
+        return updatedTiles;
+      });
+    } else if (over.id === "rack") {
+      setTiles((prevTiles) => {
+        const idx = prevTiles.findIndex((t) => t.id === active.id);
+        if (idx === -1) return prevTiles;
+        const updated = [...prevTiles];
+        updated[idx] = {
+          ...updated[idx],
+          isOnGrid: false,
+          row: -1,
+          col: -1,
+        };
+        return updated;
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col h-full">
+    <div className="h-screen flex flex-col overflow-hidden">
       <DndContext
         collisionDetection={rectIntersection}
-        onDragEnd={(event: DragEndEvent) => {
-          const nativeEvent = event.activatorEvent;
-
-          let clientY: number | null = null;
-
-          if (
-            nativeEvent instanceof MouseEvent ||
-            nativeEvent instanceof TouchEvent
-          ) {
-            console.log("nativeEvent", nativeEvent);
-            clientY =
-              nativeEvent instanceof MouseEvent
-                ? nativeEvent.clientY
-                : (nativeEvent.touches[0]?.clientY ?? null);
-          }
-
-          console.log("clientY", clientY);
-          console.log("rackTopY", rackTopY);
-
-          if (rackTopY !== null && clientY !== null && clientY >= rackTopY) {
-            // Dropped over or below the rack — ignore
-            return;
-          }
-
-          const { over, active } = event;
-          console.log("over", over);
-          console.log("active", active);
-          if (!over) return;
-
-          const overId = over?.id?.toString();
-          if (overId === "dump") {
-            if (Object.values(pool).flatMap((p) => p).length < 3) return;
-            const newTiles: TileType[] = [];
-            const localPool = { ...pool };
-            const expandedLetters = Object.values(localPool).flatMap(
-              (letterArray) => letterArray,
-            );
-            for (let i = expandedLetters.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [expandedLetters[i], expandedLetters[j]] = [
-                expandedLetters[j],
-                expandedLetters[i],
-              ];
-            }
-            while (newTiles.length < 3 && expandedLetters.length > 0) {
-              const letter = expandedLetters.pop();
-              console.log("letter", letter);
-
-              if (!letter) break;
-              newTiles.push({
-                id: letter.id,
-                letter: letter.letter,
-                row: -1,
-                col: -1,
-                isOnGrid: false,
-              });
-              localPool[letter.letter] = localPool[letter.letter].filter(
-                (l) => l.id !== letter.id,
-              );
-            }
-
-            setPool({
-              ...localPool,
-              [active.data.current?.letter]: [
-                ...(localPool[active.data.current?.letter] || []),
-                {
-                  id: String(active.id),
-                  letter: String(active.data.current?.letter),
-                },
-              ],
-            });
-
-            setTiles((prevTiles) => {
-              return [
-                ...prevTiles.filter((t) => t.id !== active.id),
-                ...newTiles,
-              ];
-            });
-
-            return;
-          } else if (over.id.toString().startsWith("cell-")) {
-            const [_, rowStr, colStr] = over.id.toString().split("-");
-            const row = parseInt(rowStr);
-            const col = parseInt(colStr);
-
-            setTiles((prevTiles) => {
-              const draggedTile = prevTiles.find((t) => t.id === active.id);
-              if (!draggedTile) return prevTiles;
-
-              const updatedTiles = prevTiles.map((tile) => {
-                if (tile.id === active.id) {
-                  return {
-                    ...tile,
-                    isOnGrid: true,
-                    row,
-                    col,
-                  };
-                } else if (
-                  tile.isOnGrid &&
-                  tile.row === row &&
-                  tile.col === col
-                ) {
-                  return {
-                    ...tile,
-                    isOnGrid: false,
-                    row: -1,
-                    col: -1,
-                  };
-                }
-                return tile;
-              });
-
-              return updatedTiles;
-            });
-          } else if (over.id === "rack") {
-            setTiles((prevTiles) => {
-              const idx = prevTiles.findIndex((t) => t.id === active.id);
-              if (idx === -1) return prevTiles;
-              const updated = [...prevTiles];
-              updated[idx] = {
-                ...updated[idx],
-                isOnGrid: false,
-                row: -1,
-                col: -1,
-              };
-              return updated;
-            });
-          }
-        }}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        <div className="grow px-4 pb-36 flex flex-col items-center justify-center pt-2 h-full">
-          <h1 className="text-2xl font-bold text-center pb-8 ">Enne-agrams</h1>
-          <Grid tiles={tiles} />
+        <div className="flex flex-col px-4 pt-2 pb-36">
+          <h1 className="text-2xl font-bold text-center pb-4">Enne-agrams</h1>
+          <div className="flex-grow flex justify-center">
+            <Grid tiles={tiles} disableScroll={isDragging} />
+          </div>
         </div>
         <div className="fixed bottom-0 left-0 w-full z-10 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
           <div
