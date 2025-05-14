@@ -1,7 +1,7 @@
 import {
   DndContext,
   DragEndEvent,
-  DragStartEvent,
+  pointerWithin,
   rectIntersection,
 } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
@@ -73,7 +73,23 @@ export default function Index() {
   });
   const [tiles, setTiles] = useState<TileType[]>([]);
   const rackRef = useRef<HTMLDivElement | null>(null);
-  const [rackTopY, setRackTopY] = useState<number | null>(null);
+
+  // Custom collision detection function that prioritizes the dump area
+  const customCollisionDetection = (args: any) => {
+    // First check if it's over the dump area or rack
+    const dumpCollisions = pointerWithin(args);
+
+    // If a dump area or rack collision is detected, return just that
+    if (
+      dumpCollisions.length > 0 &&
+      (dumpCollisions[0].id === "dump" || dumpCollisions[0].id === "rack")
+    ) {
+      return dumpCollisions;
+    }
+
+    // Otherwise use the default rectangle intersection algorithm for the grid
+    return rectIntersection(args);
+  };
 
   const generateTiles = () => {
     const newTiles = [];
@@ -111,12 +127,6 @@ export default function Index() {
     generateTiles();
   }, []);
 
-  useEffect(() => {
-    if (rackRef.current) {
-      const rect = rackRef.current.getBoundingClientRect();
-      setRackTopY(rect.top);
-    }
-  }, []);
 
   // React-like handlers for drag events
   const handleDragStart = () => {
@@ -127,35 +137,26 @@ export default function Index() {
     // First reset drag state to restore normal scrolling
     setIsDragging(false);
 
-    const nativeEvent = event.activatorEvent;
-    let clientY: number | null = null;
-
-    if (
-      nativeEvent instanceof MouseEvent ||
-      nativeEvent instanceof TouchEvent
-    ) {
-      clientY =
-        nativeEvent instanceof MouseEvent
-          ? nativeEvent.clientY
-          : (nativeEvent.touches[0]?.clientY ?? null);
-    }
-
-    if (rackTopY !== null && clientY !== null && clientY >= rackTopY) {
-      // Dropped over or below the rack — ignore
-      return;
-    }
-
     const { over, active } = event;
     if (!over) return;
 
     const overId = over?.id?.toString();
     if (overId === "dump") {
+      // Check if we have enough letters in the pool for drawing 3 new ones
       if (Object.values(pool).flatMap((p) => p).length < 3) return;
+
+      // Get the current letter from the active drag element
+      const activeLetter = active.data.current?.letter;
+      if (!activeLetter) return;
+
+      // Create 3 new tiles from the pool
       const newTiles: TileType[] = [];
       const localPool = { ...pool };
       const expandedLetters = Object.values(localPool).flatMap(
         (letterArray) => letterArray,
       );
+
+      // Shuffle the expanded letters
       for (let i = expandedLetters.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [expandedLetters[i], expandedLetters[j]] = [
@@ -163,10 +164,12 @@ export default function Index() {
           expandedLetters[i],
         ];
       }
+
+      // Draw 3 new tiles
       while (newTiles.length < 3 && expandedLetters.length > 0) {
         const letter = expandedLetters.pop();
-
         if (!letter) break;
+
         newTiles.push({
           id: letter.id,
           letter: letter.letter,
@@ -174,25 +177,30 @@ export default function Index() {
           col: -1,
           isOnGrid: false,
         });
+
+        // Remove the drawn letter from the pool
         localPool[letter.letter] = localPool[letter.letter].filter(
           (l) => l.id !== letter.id,
         );
       }
 
-      setPool({
-        ...localPool,
-        [active.data.current?.letter]: [
-          ...(localPool[active.data.current?.letter] || []),
-          {
-            id: String(active.id),
-            letter: String(active.data.current?.letter),
-          },
-        ],
-      });
+      // Return the active tile to the pool
+      localPool[activeLetter] = [
+        ...(localPool[activeLetter] || []),
+        {
+          id: String(active.id),
+          letter: activeLetter,
+        },
+      ];
 
-      setTiles((prevTiles) => {
-        return [...prevTiles.filter((t) => t.id !== active.id), ...newTiles];
-      });
+      // Update the pool state
+      setPool(localPool);
+
+      // Update tiles - remove the dropped tile and add new ones
+      setTiles((prevTiles) => [
+        ...prevTiles.filter((t) => t.id !== active.id),
+        ...newTiles,
+      ]);
 
       return;
     } else if (over.id.toString().startsWith("cell-")) {
@@ -244,7 +252,7 @@ export default function Index() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <DndContext
-        collisionDetection={rectIntersection}
+        collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
@@ -254,7 +262,7 @@ export default function Index() {
             <Grid tiles={tiles} disableScroll={isDragging} />
           </div>
         </div>
-        <div className="fixed bottom-0 left-0 w-full z-10 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
+        <div className="fixed bottom-0 left-0 w-full z-20 bg-pinky dark:bg-cocoa border-t border-pinky dark:border-ivory px-4 py-2">
           <div
             className="flex flex-col items-center justify-between"
             ref={rackRef}

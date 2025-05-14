@@ -6,6 +6,15 @@ export const DumpArea = ({
   pool: Record<string, { id: string; letter: string }[]>;
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: "dump" });
+
+  const hoverStyles = isOver
+    ? {
+        backgroundColor: "#FFD1DC",
+        borderColor: "#FF69B4",
+        borderStyle: "solid",
+      }
+    : {};
+
   return (
     <div
       ref={setNodeRef}
@@ -19,6 +28,7 @@ export const DumpArea = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        ...hoverStyles,
       }}
     >
       Dump ({Object.values(pool).flatMap((letter) => letter).length} remaining)
