@@ -112,7 +112,7 @@ export const Grid = ({ tiles, disableScroll = false }: GridProps) => {
         style={{
           overflowX: disableScroll ? "hidden" : "auto",
           overflowY: disableScroll ? "hidden" : "auto",
-          maxWidth: "95vw",
+          maxWidth: "100vw",
         }}
       >
         <div

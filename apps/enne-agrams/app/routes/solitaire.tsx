@@ -21,8 +21,25 @@ export default function Index() {
   const [isDragging, setIsDragging] = useState(false);
   const [activeTile, setActiveTile] = useState<TileType | null>(null);
 
-  // Prevent global scrolling
+  // Prevent global scrolling while allowing specific safe area for header
   useEffect(() => {
+    // Add custom CSS to ensure safe area for iOS devices
+    const style = document.createElement("style");
+    style.textContent = `
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+      }
+      .safe-area-top {
+        padding-top: max(var(--sat), 1rem) !important;
+      }
+      .safe-area-bottom {
+        padding-bottom: max(var(--sab), 1rem) !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Prevent body scrolling
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.overflow = "hidden";
@@ -31,6 +48,7 @@ export default function Index() {
     document.body.style.padding = "0";
 
     return () => {
+      document.head.removeChild(style);
       document.documentElement.style.overflow = "";
       document.documentElement.style.height = "";
       document.body.style.overflow = "";
@@ -238,26 +256,29 @@ export default function Index() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-pinky dark:bg-cocoa">
-        {/* Header - Adding safe area padding for mobile */}
-        <div className="p-2 pt-4 text-center safe-top">
+      <div className="flex flex-col h-screen w-screen bg-pinky dark:bg-cocoa">
+        {/* Fixed Header - Will always be visible at the top */}
+        <div className="safe-area-top sticky top-0 z-50 p-2 text-center bg-pinky dark:bg-cocoa border-b border-cocoa dark:border-ivory">
           <h1 className="text-2xl font-bold">Enne-agrams</h1>
         </div>
 
-        {/* Main game board - takes available space */}
-        <div className="flex-1 overflow-auto p-2 max-h-[calc(100vh-120px)]">
+        {/* Main game board - takes available space with explicit calculation */}
+        <div
+          className="flex-1 overflow-auto p-2"
+          style={{ height: "calc(100vh - 140px)" }}
+        >
           <Grid tiles={tiles} disableScroll={isDragging} />
         </div>
 
         {/* Letter rack area - fixed height */}
         <div className="border-t border-cocoa dark:border-ivory">
-          <div className="h-20 overflow-auto p-2">
+          <div className="h-36 overflow-auto p-2">
             <LetterRack tiles={tiles} />
           </div>
         </div>
 
         {/* Dump button area - fixed height with safe area for bottom */}
-        <div className="p-2 pb-4 flex justify-center border-t border-cocoa dark:border-ivory safe-bottom">
+        <div className="safe-area-bottom p-2 flex justify-center border-t border-cocoa dark:border-ivory">
           <DumpArea pool={pool} />
         </div>
       </div>
