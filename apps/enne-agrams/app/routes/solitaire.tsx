@@ -264,8 +264,8 @@ export default function Index() {
 
         {/* Main game board - takes available space with explicit calculation */}
         <div
-          className="flex-1 overflow-auto p-2"
-          style={{ height: "calc(100vh - 140px)" }}
+          className="flex-1 overflow-auto p-2 justify-center"
+          style={{ height: "calc(100dvh - 140px)" }}
         >
           <Grid tiles={tiles} disableScroll={isDragging} />
         </div>

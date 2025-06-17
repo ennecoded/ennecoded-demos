@@ -105,23 +105,27 @@ export const Grid = ({ tiles, disableScroll = false }: GridProps) => {
   const cellSize = getCellSize();
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative flex items-center justify-center w-full h-full">
       <div
         ref={gridContainerRef}
-        className={`border border-gray-300 rounded-lg ${disableScroll ? "overflow-hidden" : "overflow-auto"} h-full w-full`}
+        className={`border border-gray-300 rounded-lg ${disableScroll ? "overflow-hidden" : "overflow-auto"} mx-auto p-4`}
         style={{
           overflowX: disableScroll ? "hidden" : "auto",
           overflowY: disableScroll ? "hidden" : "auto",
-          maxWidth: "100vw",
+          maxWidth: "min(100vw, 90vw)",
+          maxHeight: "80dvh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <div
-          className="grid gap-1 p-4"
+          className="grid gap-1"
           style={{
             gridTemplateColumns: `repeat(${colCount}, ${cellSize})`,
             gridTemplateRows: `repeat(${rowCount}, ${cellSize})`,
-            width: `calc(${colCount} * ${cellSize} + (${colCount} - 1) * 0.25rem + 2rem)`,
-            height: `calc(${rowCount} * ${cellSize} + (${rowCount} - 1) * 0.25rem + 2rem)`,
+            width: `calc(${colCount} * ${cellSize} + (${colCount} - 1) * 0.25rem)`,
+            height: `calc(${rowCount} * ${cellSize} + (${rowCount} - 1) * 0.25rem)`,
           }}
         >
           {Array.from({ length: rowCount * colCount }).map((_, index) => {
